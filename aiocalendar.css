@@ -1,0 +1,118 @@
+#views-exposed-form-events-calendar-calendar-1 .form-item {
+  float: left;
+  margin-left: 10px;
+  padding-right: 5px;
+}
+
+.view-dom-id-1 .month-view td {
+  height: 150px;
+}
+
+.view-dom-id-1 .year-view .month-view td {
+  height: auto;
+}
+
+.calendar-calendar table.mini td {
+  height: auto;
+}
+
+#checkall {
+  margin-top: 9px;
+}
+.view-field view-data-node-data-field-event-date-field-event-date-value {
+  display: none;
+}
+/* Hide extra info we're adding for event tool tip display. */
+.date-display-single, .date-display-start, .date-display-separator,
+.date-display-end,
+.view-data-node-data-field-event-image-field-event-location-value,
+.view-data-node-data-field-event-image-field-event-image-imceimage-path,
+.view-data-node-revisions-body {
+  display: none;
+}
+
+.event-tooltip-image {
+  float: right;
+  border: 1px solid black;
+  margin: 0 0 10px 10px;
+}
+
+.tooltip-event h2 {
+  margin-top: 3px;
+}
+
+.calendar-calendar td .inner div.calendar div a {
+  text-decoration: none;
+}
+
+.tooltip-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.tooltip-action {
+  border: 1px solid black;
+  cursor: pointer;
+  padding: 10px 80px;
+  margin: 0 auto;
+  width: 245px;
+  height: 55px;
+  background: lightBlue;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+}
+
+.tooltip-icon {
+  float:left;
+  padding-left: 5px;
+}
+
+.tooltip-image {
+  float: left;
+}
+
+.tooltip-text {
+  display: block;
+  float: left;
+  margin-top: 20px;
+  padding-left: 3px;
+  color: black;
+}
+
+/* Gray background for email dialog */
+.ui-dialog-overlay {
+  background: black;
+  opacity: 0.5;
+}
+
+#email-event-form {
+  padding: .5em 1.7em;
+}
+#email-event-form textarea {
+  width: 86%;
+  height: 140px;
+}
+
+#email-event-form p {
+  margin-bottom: 2px;
+}
+
+#aiocalendar-email-event-form-1 {
+  display: none;
+}
+
+#aiocalendar-email-event-form-1 .resizable-textarea {
+  width: 88%
+}
+
+#content-middle {
+  position: relative;
+}
+#content_top {
+  background: white;
+  padding: 0 30px;
+  position: absolute;
+  right: 5px;
+  top: -15px;
+}

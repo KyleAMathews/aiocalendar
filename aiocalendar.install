@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * aiocalendar install/uninstall hooks
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function aiocalendar_install() {
+  // Setup a calendar vocabulary for AIO Calendar to use.
+  $vocab = array(
+    'name' => "Event Type",
+    'description' => 'Event Categories for the AIO Calendar',
+    'relations' => 1,
+    'hierarchy' => 0,
+    'multiple' => 0,
+    'required' => 1,
+    'tags' => 0,
+    'module' => 'aiocalendar',
+    'weight' => 0,
+    'nodes' => array(
+      'calendar_event' => 1,
+    ),
+  );
+  
+  taxonomy_save_vocabulary(&$vocab);
+}

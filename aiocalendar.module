@@ -1,0 +1,271 @@
+<?php
+
+include_once('aiocalendar.features.inc');
+
+/*
+ * Implementation of hook_init().
+ */
+function aiocalendar_init() {
+  drupal_add_css(drupal_get_path('module', 'aiocalendar') . "/aiocalendar.css");
+  drupal_add_css(drupal_get_path('module', 'aiocalendar') . "/js/start_ui_theme/ui.all.css");
+  drupal_add_css(file_directory_path() . "/aiocalendar_legend.css");
+  drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/aiocalendar.js");
+  drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/jquery.bt.min.js");
+  drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/excanvas/excanvas.compiled.js");
+  drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/hoverintent.js");
+  drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/js/jquery-ui-1.6.custom.min.js");
+  
+  // Add the email submit form:
+  drupal_add_js("alert(" + $email_event_form + ")
+              $(document).ready( function() {
+                $('body').append('" + $email_event_form + "');
+                
+                
+                
+                
+                
+                
+              });  ", 'inline');
+  
+  // Add path to theme to Drupal.settings.themePath
+  $theme_path = path_to_theme();
+  drupal_add_js("Drupal.settings.themePath = '" . $theme_path . "';", 'inline');
+}
+
+/*
+ * Implementation of hook_views_pre_render().
+ * Generate CSS to color border above checkboxes and add email event form.
+ */
+function aiocalendar_views_pre_render (&$view) {
+  $calendar_colors = array();
+  if ($view->name == "events_calendar"
+      && isset($view->date_info->calendar_colors_taxonomy)) {
+    
+    // Add form for emailing events. We hide it via css.
+    $email_event_form = drupal_get_form('aiocalendar_email_event_form');
+    $view->attachment_before = $email_event_form;
+    
+    $calendar_colors = $view->date_info->calendar_colors_taxonomy;
+    
+    $css = "";
+    foreach ($calendar_colors as $tid => $color) {
+      $css .= "#edit-tid-" . $tid . "-wrapper {";
+      $css .= "border-top: 5px solid " . $color . ";";
+      $css .= "}";
+    }
+    if (!empty($css)) {
+      file_save_data($css, file_directory_path() . "/aiocalendar_legend.css",
+                     FILE_EXISTS_REPLACE);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_strongarm().
+ */
+function aiocalendar_strongarm() {
+  // Strongarm variables for views_checkbox.
+  $conf = array();
+  $conf['views_checkboxes_limit'] = '20';
+  $conf['views_checkboxes_listsize'] = '20';
+  $conf['views_checkboxes_checkbox_enable'] = 1;
+  $conf['views_checkboxes_radio_enable'] = 1;
+  $conf['views_checkboxes_sizeup'] = 1;
+  
+  return $conf;
+}
+
+/*
+ * Override theme_calendar_ical_icon() so we can override the url produced.
+ */
+function phptemplate_calendar_ical_icon($url) {
+  $search = preg_match_all("/tid\[([0-9])*\]/", $url, $matches);
+  $tids = $matches[1];
+
+  $search = preg_match("/(.*ical\/)20[0-9]{2}-.*/", $url, $url_stem);
+
+  $url = $url_stem[1];
+
+  // Views arguments treat a "+" between arguments as OR.
+  // So we're crafting an argument that asks for all events which match one of the
+  // term IDs.
+  foreach($tids as $tid) {
+    $url .= $tid . "+";
+  }
+  
+  // Clean off extra +
+  $url = trim($url, "+");
+
+  
+  if ($image = theme('image', drupal_get_path('theme', 'byu') .'/images/ical.png', t('Add to calendar'), t('Add to calendar'))) {
+    return '<div style="text-align:r  ight"><a href="'. check_url($url) .'" class="ical-icon" title="ical">'. $image .'</a></div>';
+  }
+}
+
+/**
+ * Override theme_feed_icon() so we can override the url produced.
+ * 
+ * Return code that emits an feed icon.
+ *
+ * @param $url
+ *   The url of the feed.
+ * @param $title
+ *   A descriptive title of the feed.
+  */
+function phptemplate_feed_icon($url, $title) {
+  $search = preg_match_all("/tid\[([0-9])*\]/", $url, $matches);
+  $tids = $matches[1];
+
+  $search = preg_match("/(.*rss\/)20[0-9]{2}-.*/", $url, $url_stem);
+
+  $url = $url_stem[1];
+
+  // Views arguments treat a "+" between arguments as OR.
+  // So we're crafting an argument that asks for all events which match one of the
+  // term IDs.
+  foreach($tids as $tid) {
+    $url .= $tid . "+";
+  }
+  
+  // Clean off extra +
+  $url = trim($url, "+");
+  
+  if ($image = theme('image', drupal_get_path('theme', 'byu') .'/images/feed-icon.png', t('Syndicate content'), 'RSS')) {
+    return '<a href="'. check_url($url) .'" class="feed-icon">'. $image .'</a>';
+  }
+}
+
+function aiocalendar_email_event_form($form_state) {
+  $form['your_email'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Your Email'),
+    '#size' => 30,
+    '#maxlength' => 64, 
+  );
+  $form['to_emails'] = array(
+    '#type' => 'textarea', 
+    '#title' => t('Friend(s)\' email address. One per line'),
+    '#size' => 30,
+    '#rows' => 3,
+  );
+  $form['message'] = array(
+    '#type' => 'textarea', 
+    '#title' => t('Message (optional)'),
+    '#size' => 30,
+    '#rows' => 3,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'));
+  
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => '123',
+  );
+  $form['ical_feed_url'] = array(
+    '#type' => 'hidden',
+    '#value' => '123',
+  );
+  
+  return $form;
+}
+
+function aiocalendar_email_event_form_submit($form, &$form_submit) {
+  if (valid_email_address($form['#post']['your_email'])) {
+    $their_email = $form['#post']['your_email'];
+  }
+  else {
+    drupal_set_message(t("We couldn't send the notice as your email
+      (@email) is not a valid email address. Please try again.",
+      array('@email' => $form['#post']['your_email'])));
+    return;
+  }
+
+  $to_emails = $form['#post']['to_emails'];
+  $to_emails = explode("\n", $to_emails);
+  
+  // Clean up emails.
+  foreach ($to_emails as &$email) {
+    $email = check_plain(trim($email));  
+  }
+  
+  // Validate to emails.
+  foreach ($to_emails as &$email) {
+    if (!valid_email_address($email)) {
+      drupal_set_message(t("We couldn't send the notice as one of emails
+      (@email) is not a valid email address. Please try again.",
+      array('@email' => $email)));
+      return;
+    }
+  }
+  
+  $message = check_plain($form['#post']['message']);
+  $event_nid = check_plain($form['#post']['nid']);
+  $ical_feed = check_plain($form['#post']['ical_feed_url']);
+  
+  // iCal feed includes too much.
+  $search = preg_match("/\/(calendar\/.*)/", $ical_feed, $matches);
+  $ical_feed = $matches[1];
+  $ical_url = url($ical_feed, array('absolute' => true));
+  
+  // Grab the ical file.
+  set_time_limit(0);
+  ini_set('display_errors',true);//Just in case we get some errors, let us know....
+  
+  $file_name = '/tmp/event' . time() . '.ical';
+  $fp = fopen ($file_name, 'w+');//This is the file where we save the information
+  $ch = curl_init($ical_url);//Here is the file we are downloading
+  curl_setopt($ch, CURLOPT_TIMEOUT, 50);
+  curl_setopt($ch, CURLOPT_FILE, $fp);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+  curl_exec($ch);
+  curl_close($ch);
+  fclose($fp);
+  
+  
+  // Send email
+  foreach ($to_emails as $to_email) {
+    $boundary = '-----=' . md5( uniqid ( rand() ) ); 
+    $body .= "Content-Type: text/plain; name=\"my attachment\"\n"; 
+    $body .= "Content-Transfer-Encoding: base64\n"; 
+    $body .= "Content-Disposition: attachment; filename=\"$file_name\"\n\n";
+    
+    $fp = fopen($file_name, 'r'); 
+    do //we loop until there is no data left 
+      { 
+        $data = fread($fp, 8192); 
+        if (strlen($data) == 0) break; 
+        $content .= $data; 
+      } while (true); 
+      $content_encode = chunk_split(base64_encode($content));
+      $body .= $content_encode . "\n"; 
+      $body .= "--" . $boundary . "\n";
+      
+    $headers  = "From: mathews.kyle@gmail.com\n"; 
+    $headers .= "MIME-Version: 1.0\n"; 
+    $headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"";
+    dpm($boundary);
+    dpm($body);
+    mail('mathews.kyle@gmail.com', 'Email with attachment from PHP', $body, $headers);
+    
+    $message = array(
+      'id' => 'aiocalendar_email_event',
+      'to' => 'mathews.kyle@gmail.com',
+      //'from' => 'mathews.kyle@gmail.com',
+      'subject' => 'Email with attachment from PHP',
+      'body' => $body,
+      'headers' => array('From' => 'mathews.kyle@gmail.com',
+                         'MIME-Version' => '1.0',
+                         'Content-Type' => "multipart/mixed; boundary=\"$boundary\""),
+    );
+    
+    // We'll just use drupal_mail_send instead of drupal_mail because we other modules
+    // don't need to modify ours.
+    dpm($message);
+    drupal_mail_send($message);
+    dpm("file_path: " . $file_name);
+    mimemail('mathews.kyle@gmail.com', 'mathews.kyle@gmail.com', 'an email', $body, false, array(), null,
+             array(array('filepath' => $file_name, 'filemime' => 'text/plain')));
+  }
+  
+}
