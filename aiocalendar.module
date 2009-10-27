@@ -14,6 +14,7 @@ function aiocalendar_init() {
   drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/excanvas/excanvas.compiled.js");
   drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/hoverintent.js");
   drupal_add_js(drupal_get_path('module', 'aiocalendar') . "/js/js/jquery-ui-1.6.custom.min.js");
+  drupal_add_js("Drupal.settings.aiocalendarPath = '" . drupal_get_path('module', 'aiocalendar') . "';", 'inline');
   
   // Add the email submit form:
   drupal_add_js("alert(" + $email_event_form + ")
@@ -97,7 +98,7 @@ function phptemplate_calendar_ical_icon($url) {
   $url = trim($url, "+");
 
   
-  if ($image = theme('image', drupal_get_path('theme', 'byu') .'/images/ical.png', t('Add to calendar'), t('Add to calendar'))) {
+  if ($image = theme('image', drupal_get_path('module', 'aiocalendar') .'/images/ical.png', t('Add to calendar'), t('Add to calendar'))) {
     return '<div style="text-align:r  ight"><a href="'. check_url($url) .'" class="ical-icon" title="ical">'. $image .'</a></div>';
   }
 }
@@ -130,7 +131,7 @@ function phptemplate_feed_icon($url, $title) {
   // Clean off extra +
   $url = trim($url, "+");
   
-  if ($image = theme('image', drupal_get_path('theme', 'byu') .'/images/feed-icon.png', t('Syndicate content'), 'RSS')) {
+  if ($image = theme('image', drupal_get_path('module', 'aiocalendar') .'/images/feed-icon.png', t('Syndicate content'), 'RSS')) {
     return '<a href="'. check_url($url) .'" class="feed-icon">'. $image .'</a>';
   }
 }
@@ -244,8 +245,7 @@ function aiocalendar_email_event_form_submit($form, &$form_submit) {
     $headers  = "From: mathews.kyle@gmail.com\n"; 
     $headers .= "MIME-Version: 1.0\n"; 
     $headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"";
-    dpm($boundary);
-    dpm($body);
+
     mail('mathews.kyle@gmail.com', 'Email with attachment from PHP', $body, $headers);
     
     $message = array(
@@ -261,7 +261,6 @@ function aiocalendar_email_event_form_submit($form, &$form_submit) {
     
     // We'll just use drupal_mail_send instead of drupal_mail because we other modules
     // don't need to modify ours.
-    dpm($message);
     drupal_mail_send($message);
     dpm("file_path: " . $file_name);
     mimemail('mathews.kyle@gmail.com', 'mathews.kyle@gmail.com', 'an email', $body, false, array(), null,

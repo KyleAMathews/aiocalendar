@@ -168,7 +168,8 @@ Drupal.behaviors.aio_beautytip = function (context) {
     aiocalendar.ical_feed = ical_feed;
     Drupal.settings.aiocalendar = aiocalendar;
     
-    imagepath = Drupal.settings.basePath + Drupal.settings.themePath + "/images/";
+    imagepath = Drupal.settings.aiocalendarPath + "/images/";
+    
     closeImg = imagepath + "close.png";
     emailImg = "<img width='48' height='48' class='tooltip-image' alt='Email event' src='" + imagepath + "email.png'>";
     saveImg = "<img width='48' height='48' class='tooltip-image' alt='Save event' src='" + imagepath + "save-ical.png'>";
