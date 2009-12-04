@@ -26,8 +26,9 @@ Drupal.behaviors.aioCheckAll = function (context) {
     // If Uncheck all is clicked, unselect all but do not submit form automatically as Views
     // doesn't all you to submit a form w/ no checkboxes selected.
     $("#checkall [type='checkbox']").bind(($.browser.msie ? "click" : "change"), function () {
+      var checked_value = $("#checkall [type='checkbox']").attr('checked');
       $("form#views-exposed-form-events-calendar-calendar-1 .option [type='checkbox']").each(function() {
-        $(this).attr('checked', false);
+        $(this).attr('checked', !checked_value);
       });
     });  
   }
@@ -59,10 +60,11 @@ themeToolTips = function(data) {
     html += "<br />";  
   }
   
-  html += "<hr />";
-  
-  html += "<div class='event-summary-tooltip clear-block'>";
-  html += $(data.paragraph).prepend(data.image).parent().html();
+  if (data.image != "" || data.paragraph != "<p></p>") {
+    html += "<hr />";
+    html += "<div class='event-summary-tooltip clear-block'>";
+    html += $(data.paragraph).prepend(data.image).html();    
+  }
   
   html += "</div></div>";
   
@@ -131,15 +133,17 @@ Drupal.behaviors.aio_beautytip = function (context) {
     }
     
     if ($(pieces).find("p").length > 0) {
-      paragraph = jQuery.trim($(pieces).find("p").parent().html());
-      
-      data['paragraph'] = paragraph;
-      
-      paragraph = $(paragraph).prepend(data.image).parent().html();
+      paragraph = jQuery.trim($(pieces).find("p").parent().html());  
+      data.paragraph = paragraph;
     }
     
+    if (typeof data.paragraph == 'undefined') {
+      data.paragraph = "<p></p>";
+    }
+  
     return themeToolTips(data);
   }
+  
   // TODO Add hover intent and make people hover .25 secs or so. Plus unbind all the other links when one is clicked until
   // a tooltip is closed.
   closeResetToolTips = function () {
@@ -168,7 +172,7 @@ Drupal.behaviors.aio_beautytip = function (context) {
     aiocalendar.ical_feed = ical_feed;
     Drupal.settings.aiocalendar = aiocalendar;
     
-    imagepath = Drupal.settings.aiocalendarPath + "/images/";
+    imagepath = Drupal.settings.basePath + Drupal.settings.aiocalendarPath + "/images/";
     
     closeImg = imagepath + "close.png";
     emailImg = "<img width='48' height='48' class='tooltip-image' alt='Email event' src='" + imagepath + "email.png'>";
@@ -248,24 +252,24 @@ Drupal.behaviors.aio_beautytip = function (context) {
   setBeautyTipClickEvent();
   
   // Setup up jQuery UI dialog for the form.
-  $("#aiocalendar-email-event-form-1").show().dialog({ title: 'Email event', autoOpen: false, height: 600, width: 371, modal: true, zIndex: 10000, resizeable: false });
+  $("#aiocalendar-email-event-form-1").show().dialog({ title: 'Email event', autoOpen: false, height: 615, width: 371, modal: true, zIndex: 10000, resizeable: false });
 }
 
-// The RSS feed icons don't change when category checkboxes are updated. This code
+// This function does two things. First it moves the ical icon from the bottom
+// to the top of the page on each refresh of the calendar. Second, as the RSS
+// feed icons don't change when category checkboxes are updated. This code
 // keeps the rss icon url in sync w/ what event categories are being shown.
-Drupal.behaviors.rssUrl = function (context) {
- ical_feed = $(".ical-icon").attr('href');
-	if(typeof(ical_feed) != "undefined") {
-	 match = /ical\/(.*)/.exec(ical_feed);
-	 ical_tids = match[1];
-	 rss_feed = $("a.feed-icon").attr('href');
-	 rss_feed = rss_feed.replace(/rss\/(.*)/g,"rss/"+ical_tids);
-	 $("a.feed-icon").attr('href', rss_feed);
-	}
-  // http://www.evolt.org/regexp_in_javascript
-}
-
 Drupal.behaviors.moveIcalIcon = function (context) {
-  $("#content_top .ical-icon").empty();
+  $("#content_top .ical-icon").remove();
   $("#content_top").prepend($(".ical-icon"));
+  
+  // Set the RSS icon's URL
+  ical_feed = $(".ical-icon").attr('href');
+  if(typeof(ical_feed) != "undefined") {
+    match = /ical\/(.*)/.exec(ical_feed);
+    ical_tids = match[1];
+    rss_feed = $("a.feed-icon").attr('href');
+    rss_feed = rss_feed.replace(/rss\/(.*)/g,"rss/"+ical_tids);
+    $("a.feed-icon").attr('href', rss_feed);
+  }
 }

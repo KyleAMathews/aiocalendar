@@ -110,9 +110,11 @@
   position: relative;
 }
 #content_top {
-  background: white;
+  background: transparent;
   padding: 0 30px;
   position: absolute;
   right: 5px;
-  top: -15px;
+  top: -7px;
+  width:100px;
+  height:34px;
 }

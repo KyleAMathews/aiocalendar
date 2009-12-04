@@ -6,6 +6,8 @@ include_once('aiocalendar.features.inc');
  * Implementation of hook_init().
  */
 function aiocalendar_init() {
+  //dpm(realpath(drupal_get_path('module', 'phpmailer') . '/phpmailer/class.phpmailer.php'));
+  //dpm("boo");
   drupal_add_css(drupal_get_path('module', 'aiocalendar') . "/aiocalendar.css");
   drupal_add_css(drupal_get_path('module', 'aiocalendar') . "/js/start_ui_theme/ui.all.css");
   drupal_add_css(file_directory_path() . "/aiocalendar_legend.css");
@@ -83,7 +85,7 @@ function phptemplate_calendar_ical_icon($url) {
   $search = preg_match_all("/tid\[([0-9])*\]/", $url, $matches);
   $tids = $matches[1];
 
-  $search = preg_match("/(.*ical\/)20[0-9]{2}-.*/", $url, $url_stem);
+  $search = preg_match("/(.*ical\/)20[0-9]{2}.*/", $url, $url_stem);
 
   $url = $url_stem[1];
 
@@ -172,8 +174,11 @@ function aiocalendar_email_event_form($form_state) {
 }
 
 function aiocalendar_email_event_form_submit($form, &$form_submit) {
+  require_once(realpath(drupal_get_path('module', 'phpmailer') . '/phpmailer/class.phpmailer.php'));
+  $node = node_load($form['#post']['nid']);
+
   if (valid_email_address($form['#post']['your_email'])) {
-    $their_email = $form['#post']['your_email'];
+    $from_email = $form['#post']['your_email'];
   }
   else {
     drupal_set_message(t("We couldn't send the notice as your email
@@ -210,61 +215,69 @@ function aiocalendar_email_event_form_submit($form, &$form_submit) {
   $ical_url = url($ical_feed, array('absolute' => true));
   
   // Grab the ical file.
-  set_time_limit(0);
-  ini_set('display_errors',true);//Just in case we get some errors, let us know....
+  $ical_file = file_get_contents($ical_url);
   
-  $file_name = '/tmp/event' . time() . '.ical';
-  $fp = fopen ($file_name, 'w+');//This is the file where we save the information
-  $ch = curl_init($ical_url);//Here is the file we are downloading
-  curl_setopt($ch, CURLOPT_TIMEOUT, 50);
-  curl_setopt($ch, CURLOPT_FILE, $fp);
-  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-  curl_exec($ch);
-  curl_close($ch);
-  fclose($fp);
-  
-  
-  // Send email
-  foreach ($to_emails as $to_email) {
-    $boundary = '-----=' . md5( uniqid ( rand() ) ); 
-    $body .= "Content-Type: text/plain; name=\"my attachment\"\n"; 
-    $body .= "Content-Transfer-Encoding: base64\n"; 
-    $body .= "Content-Disposition: attachment; filename=\"$file_name\"\n\n";
-    
-    $fp = fopen($file_name, 'r'); 
-    do //we loop until there is no data left 
-      { 
-        $data = fread($fp, 8192); 
-        if (strlen($data) == 0) break; 
-        $content .= $data; 
-      } while (true); 
-      $content_encode = chunk_split(base64_encode($content));
-      $body .= $content_encode . "\n"; 
-      $body .= "--" . $boundary . "\n";
-      
-    $headers  = "From: mathews.kyle@gmail.com\n"; 
-    $headers .= "MIME-Version: 1.0\n"; 
-    $headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"";
+  // Send email using PHPMailer
+  $mail = new PHPMailer();
+  $mail->CharSet = "UTF-8";
 
-    mail('mathews.kyle@gmail.com', 'Email with attachment from PHP', $body, $headers);
-    
-    $message = array(
-      'id' => 'aiocalendar_email_event',
-      'to' => 'mathews.kyle@gmail.com',
-      //'from' => 'mathews.kyle@gmail.com',
-      'subject' => 'Email with attachment from PHP',
-      'body' => $body,
-      'headers' => array('From' => 'mathews.kyle@gmail.com',
-                         'MIME-Version' => '1.0',
-                         'Content-Type' => "multipart/mixed; boundary=\"$boundary\""),
-    );
-    
-    // We'll just use drupal_mail_send instead of drupal_mail because we other modules
-    // don't need to modify ours.
-    drupal_mail_send($message);
-    dpm("file_path: " . $file_name);
-    mimemail('mathews.kyle@gmail.com', 'mathews.kyle@gmail.com', 'an email', $body, false, array(), null,
-             array(array('filepath' => $file_name, 'filemime' => 'text/plain')));
+  if (!empty($message)) {
+    $body .= "<strong>Message from sender:</strong> <br />";
+    $body .= "<p>" . $message . "</p><br />";  
   }
   
+  // Add title.
+  $body .= "<h2>" . $node->title . "</h2><br />";
+  
+  // Add Date.
+  $format = "M j, Y";
+  $format2 = "g:iA";
+  if (count($node->field_event_date) > 1) {
+    $body .= "<strong>Dates:</strong> " . "<br />";
+    foreach ($node->field_event_date as $date) {
+      $body .= date($format, strtotime($date['value'])) . " at " .
+      date($format2, strtotime($date['value']))
+      . " &mdash; " .
+      date($format, strtotime($date['value2']))  . " at " .
+      date($format2, strtotime($date['value'])) . "<br />";
+    }
+    $body .= "<br />";
+  }
+  else {
+    $body .= "<strong>Date:</strong> " . date($format, strtotime($node->field_event_date[0]['value']))  . " at " .
+      date($format2, strtotime($date['value']))
+      . " - " .
+      date($format, strtotime($node->field_event_date[0]['value2']))  . " at " .
+      date($format2, strtotime($date['value'])) . "<br />";
+  }
+  
+  // Add location.
+  $body .= "<strong>Location:</strong> " . array_pop($node->field_event_location[0]) . "<br />";
+  
+  $body .= $node->body;
+  
+  $mail->IsSMTP(); // telling the class to use SMTP
+  $mail->SMTPDebug  = 0;
+  $mail->Host = "gateway.byu.edu"; // Use Gateway as our SMTP server.
+  
+  $mail->SetFrom($from_email);
+  
+  $mail->Subject = $node->title;
+  
+  // TODO add message to body, add begin + end times, add attachment: ical file at end, use actual email addresses.
+  //$mail->MsgHTML($body);
+  $mail->Body = drupal_html_to_text($body);
+  //$mail->AltBody = drupal_html_to_text($body);
+  
+  foreach ($to_emails as $email) {
+    $mail->AddAddress($email);  
+  }
+  
+  $mail->AddStringAttachment($ical_file, $node->title . ".ics");
+  $sendResult = $mail->Send();
+  if($sendResult == false) {
+    watchdog('php',$mail->ErrorInfo,array('%title' => check_plain($node->title)));
+  } else {
+    drupal_set_message("Mail has been sent");  
+  }
 }

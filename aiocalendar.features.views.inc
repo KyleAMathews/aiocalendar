@@ -736,6 +736,11 @@ function _aiocalendar_views_default_views() {
       'reduce_duplicates' => 0,
     ),
   ));
+  $handler->override_option('cache', array(
+    'type' => 'time',
+    'results_lifespan' => '1800',
+    'output_lifespan' => '1800',
+  ));
   $handler->override_option('style_plugin', 'ical');
   $handler->override_option('style_options', array(
     'mission_description' => FALSE,
